@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1007837627782",
+    "project_id": "colocduty-f1ebd",
+    "storage_bucket": "colocduty-f1ebd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1007837627782:android:28569c439001b8fdd99807",
+        "android_client_info": {
+          "package_name": "com.colocduty.app.coloc_duty"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDu9hl5vsSa0CDgk4OVtleXi725AZOU0aE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
