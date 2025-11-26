@@ -8,8 +8,7 @@ class PreferencesService {
 
   static Future<bool> isOnboardingCompleted() async {
     final prefs = await SharedPreferences.getInstance();
-    // return prefs.getBool(_kOnboardingCompleted) ?? false;
-    return false;
+    return (prefs.getBool(_kOnboardingCompleted) ?? false) == true;
   }
 
   static Future<void> completeOnboarding() async {

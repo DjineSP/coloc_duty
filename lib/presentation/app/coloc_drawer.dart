@@ -49,8 +49,19 @@ class _ColocDrawerState extends State<ColocDrawer> {
 
           final name = data['name'] ?? "Ma Coloc";
           final code = data['inviteCode'] ?? "---";
-          final members = List<Map<String, dynamic>>.from(data['members'] ?? []);
+          final rawMembers = List<Map<String, dynamic>>.from(data['members'] ?? []);
           final currentUid = FirebaseAuth.instance.currentUser?.uid;
+
+          // On crée une copie triée pour afficher toujours "Moi" en premier
+          final members = List<Map<String, dynamic>>.from(rawMembers);
+          if (currentUid != null) {
+            members.sort((a, b) {
+              final aIsMe = a['uid'] == currentUid;
+              final bIsMe = b['uid'] == currentUid;
+              if (aIsMe == bIsMe) return 0;
+              return aIsMe ? -1 : 1;
+            });
+          }
 
           return Column(
             children: [
@@ -125,6 +136,7 @@ class _ColocDrawerState extends State<ColocDrawer> {
                     final isMe = m['uid'] == currentUid;
                     final displayName = m['displayName'] ?? "Inconnu";
                     final photoUrl = m['photoUrl'] as String?;
+                    final isActive = (m['active'] as bool?) ?? true;
 
                     return ListTile(
                       leading: CircleAvatar(
@@ -134,11 +146,29 @@ class _ColocDrawerState extends State<ColocDrawer> {
                             ? ClipOval(child: Image.asset(photoUrl, fit: BoxFit.cover))
                             : Text(
                           displayName[0].toUpperCase(),
-                          style: TextStyle(color: primary, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: isActive ? primary : theme.disabledColor,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                      title: Text(displayName, style: TextStyle(fontWeight: isMe ? FontWeight.bold : FontWeight.normal)),
-                      trailing: isMe ? const Chip(label: Text("Moi", style: TextStyle(fontSize: 10)), backgroundColor: Colors.transparent) : null,
+                      title: Text(
+                        displayName,
+                        style: TextStyle(
+                          fontWeight: isMe ? FontWeight.bold : FontWeight.normal,
+                          color: isActive ? null : theme.disabledColor,
+                        ),
+                      ),
+                      subtitle: isActive ? null : const Text("Déconnecté"),
+                      trailing: isMe
+                          ? Chip(
+                              label: Text(
+                                isActive ? "Moi" : "Moi (déconnecté)",
+                                style: const TextStyle(fontSize: 10),
+                              ),
+                              backgroundColor: Colors.transparent,
+                            )
+                          : null,
                     );
                   },
                 ),
@@ -146,10 +176,10 @@ class _ColocDrawerState extends State<ColocDrawer> {
 
               const Divider(height: 1),
 
-              // QUITTER
+              // SE DÉCONNECTER (sans supprimer le membre)
               ListTile(
                 leading: const Icon(Icons.logout, color: Colors.red),
-                title: const Text("Quitter la colocation", style: TextStyle(color: Colors.red)),
+                title: const Text("Se déconnecter", style: TextStyle(color: Colors.red)),
                 onTap: () => _showLeaveDialog(context),
               ),
             ],
@@ -162,20 +192,24 @@ class _ColocDrawerState extends State<ColocDrawer> {
   void _showLeaveDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Quitter la colocation ?"),
-        content: const Text("Tu devras entrer le code pour revenir."),
+      builder: (dialogContext) => AlertDialog(
+        title: const Text("Se déconnecter de la colocation ?"),
+        content: const Text("Tu pourras revenir plus tard avec le code d'invitation."),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Annuler")),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text("Annuler")),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context);
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
+              await FirestoreService.setCurrentMemberActive(false);
 
+              // On efface toutes les données locales de l'application
+              await PreferencesService.clearAll();
+
+              // On déconnecte complètement l'utilisateur Firebase côté appareil
               await FirebaseAuth.instance.signOut();
-              await PreferencesService.saveCurrentColocId("");
 
-              if (context.mounted) context.go('/auth');
+              // Retour au flux de démarrage (Splash → Onboarding → Auth)
+              if (context.mounted) context.go('/');
             },
             child: const Text("Quitter", style: TextStyle(color: Colors.red)),
           ),

@@ -1,4 +1,8 @@
 // lib/routes/app_router.dart
+import 'package:coloc_duty/presentation/hq/hq_tab.dart';
+import 'package:coloc_duty/presentation/hq/screens/hq_history_screen.dart';
+import 'package:coloc_duty/presentation/hq/screens/hq_manage_tasks_screen.dart';
+import 'package:coloc_duty/presentation/hq/screens/hq_stats_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../presentation/splash/splash_screen.dart';
@@ -24,6 +28,26 @@ final GoRouter router = GoRouter(
     GoRoute(
       path: '/home',
       builder: (context, state) => const MainAppShell(),
+    ),
+
+    // Dans ta définition des routes (GoRouter)
+    GoRoute(
+      path: '/hq',
+      pageBuilder: (context, state) => const NoTransitionPage(child: HqTab()),
+      routes: [
+        GoRoute(
+          path: 'tasks',
+          builder: (context, state) => const HqManageTasksScreen(),
+        ),
+        GoRoute(
+          path: 'stats',
+          builder: (context, state) => const HqStatsScreen(),
+        ),
+        GoRoute(
+          path: 'history',
+          builder: (context, state) => const HqHistoryScreen(),
+        ),
+      ],
     ),
   ],
 );

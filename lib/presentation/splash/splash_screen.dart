@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:go_router/go_router.dart';
+import '../../data/local/preferences_service.dart';
 import '../../services/firestore_service.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -21,8 +22,18 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _checkAppStatus() async {
     // Petit délai pour l'UX (laisser le temps de voir le logo)
     await Future.delayed(const Duration(milliseconds: 2000));
+    // 1. Vérifier si l'onboarding a déjà été complété
+    final onboardingDone = await PreferencesService.isOnboardingCompleted();
 
-    // Vérification cohérente : Est-ce que j'ai un ID local ET est-ce que je suis toujours membre ?
+    if (!mounted) return;
+
+    if (!onboardingDone) {
+      // Premier lancement ou onboarding jamais terminé
+      context.go('/onboarding');
+      return;
+    }
+
+    // 2. Vérifier la cohérence de la colocation locale
     final isValidMember = await FirestoreService.verifyUserColocAccess();
 
     if (!mounted) return;
@@ -31,7 +42,6 @@ class _SplashScreenState extends State<SplashScreen> {
       context.go('/home');
     } else {
       // Si pas membre ou ID invalide, on redirige vers l'auth
-      // On pourrait vérifier onboardingCompleted ici si besoin
       context.go('/auth');
     }
   }
