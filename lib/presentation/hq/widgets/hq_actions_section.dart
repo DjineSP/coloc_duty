@@ -26,9 +26,7 @@ class HqActionsSection extends StatelessWidget {
             context,
             icon: Icons.sync,
             title: "Tourniquet",
-            onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Attribution en cours...")),
-            ),
+            onTap: () => context.push('/hq/tourniquet'),
           ),
           _tile(
             context,

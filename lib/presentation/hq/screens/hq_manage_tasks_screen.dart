@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../../services/firestore_service.dart';
+import '../../../services/task_firestore_service.dart';
 
 class HqManageTasksScreen extends StatefulWidget {
   const HqManageTasksScreen({super.key});
@@ -217,6 +218,7 @@ class _HqManageTasksScreenState extends State<HqManageTasksScreen> {
     String recurrenceControl = 'hebdo';
     int intervalDays = 3;
     String selectedIconKey = 'other';
+    final intervalController = TextEditingController(text: intervalDays.toString());
 
     await showModalBottomSheet(
       context: context,
@@ -229,140 +231,144 @@ class _HqManageTasksScreenState extends State<HqManageTasksScreen> {
         final viewInsets = MediaQuery.of(ctx).viewInsets.bottom;
         return Padding(
           padding: EdgeInsets.only(bottom: viewInsets),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          child: StatefulBuilder(
+            builder: (ctx, setModalState) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Expanded(
-                      child: Text(
-                        "Nouvelle tâche",
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(ctx),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: titleController,
-                  decoration: const InputDecoration(
-                    labelText: 'Titre',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Description (optionnel)',
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: recurrenceControl,
-                  items: const [
-                    DropdownMenuItem(value: 'quotidien', child: Text('Quotidien')),
-                    DropdownMenuItem(value: 'hebdo', child: Text('Hebdomadaire')),
-                    DropdownMenuItem(value: 'mensuel', child: Text('Mensuel')),
-                    DropdownMenuItem(value: 'ponctuel', child: Text('Ponctuel')),
-                    DropdownMenuItem(value: 'interval', child: Text('Tous les X jours')),
-                  ],
-                  onChanged: (v) {
-                    if (v != null) {
-                      setState(() => recurrenceControl = v);
-                    }
-                  },
-                  decoration: const InputDecoration(labelText: 'Récurrence', border: OutlineInputBorder()),
-                ),
-                if (recurrenceControl == 'interval') ...[
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      const Text('Tous les'),
-                      const SizedBox(width: 8),
-                      SizedBox(
-                        width: 70,
-                        child: TextField(
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            isDense: true,
-                            contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                            border: OutlineInputBorder(),
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            "Nouvelle tâche",
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                           ),
-                          controller: TextEditingController(text: intervalDays.toString()),
-                          onChanged: (value) {
-                            final parsed = int.tryParse(value) ?? intervalDays;
-                            if (parsed > 0) {
-                              setState(() => intervalDays = parsed);
-                            }
-                          },
                         ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: titleController,
+                      decoration: const InputDecoration(
+                        labelText: 'Titre',
+                        border: OutlineInputBorder(),
                       ),
-                      const SizedBox(width: 8),
-                      const Text('jours'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: descriptionController,
+                      decoration: const InputDecoration(
+                        labelText: 'Description (optionnel)',
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLines: 2,
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: recurrenceControl,
+                      items: const [
+                        DropdownMenuItem(value: 'quotidien', child: Text('Quotidien')),
+                        DropdownMenuItem(value: 'hebdo', child: Text('Hebdomadaire')),
+                        DropdownMenuItem(value: 'mensuel', child: Text('Mensuel')),
+                        DropdownMenuItem(value: 'ponctuel', child: Text('Ponctuel')),
+                        DropdownMenuItem(value: 'interval', child: Text('Tous les X jours')),
+                      ],
+                      onChanged: (v) {
+                        if (v != null) {
+                          setModalState(() => recurrenceControl = v);
+                        }
+                      },
+                      decoration: const InputDecoration(labelText: 'Récurrence', border: OutlineInputBorder()),
+                    ),
+                    if (recurrenceControl == 'interval') ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          const Text('Tous les'),
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 70,
+                            child: TextField(
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                border: OutlineInputBorder(),
+                              ),
+                              controller: intervalController,
+                              onChanged: (value) {
+                                final parsed = int.tryParse(value);
+                                if (parsed != null && parsed > 0) {
+                                  setModalState(() => intervalDays = parsed);
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text('jours'),
+                        ],
+                      ),
                     ],
-                  ),
-                ],
-                const SizedBox(height: 16),
-                Text("Icône", style: Theme.of(context).textTheme.labelLarge),
-                const SizedBox(height: 8),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: _iconChoices.entries.map((entry) {
-                      final isSelected = selectedIconKey == entry.key;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: ChoiceChip(
-                          label: Icon(entry.value, size: 20),
-                          selected: isSelected,
-                          onSelected: (_) {
-                            setState(() => selectedIconKey = entry.key);
-                          },
-                          selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.15),
-                          backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
-                        ),
-                      );
-                    }).toList(),
-                  ),
+                    const SizedBox(height: 16),
+                    Text("Icône", style: Theme.of(context).textTheme.labelLarge),
+                    const SizedBox(height: 8),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: _iconChoices.entries.map((entry) {
+                          final isSelected = selectedIconKey == entry.key;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: ChoiceChip(
+                              label: Icon(entry.value, size: 20),
+                              selected: isSelected,
+                              onSelected: (_) {
+                                setModalState(() => selectedIconKey = entry.key);
+                              },
+                              selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                              backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          final title = titleController.text.trim();
+                          if (title.isEmpty) return;
+
+                          final effectiveRecurrence = recurrenceControl == 'interval'
+                              ? 'interval_${intervalDays.clamp(1, 365)}'
+                              : recurrenceControl;
+
+                          await TaskFirestoreService.createTaskDefinition(
+                            title: title,
+                            description: descriptionController.text.trim().isEmpty
+                                ? null
+                                : descriptionController.text.trim(),
+                            recurrence: effectiveRecurrence,
+                            iconKey: selectedIconKey,
+                          );
+
+                          if (mounted) Navigator.pop(ctx);
+                        },
+                        child: const Text('Enregistrer'),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      final title = titleController.text.trim();
-                      if (title.isEmpty) return;
-
-                      final effectiveRecurrence = recurrenceControl == 'interval'
-                          ? 'interval_${intervalDays.clamp(1, 365)}'
-                          : recurrenceControl;
-
-                      await FirestoreService.createTaskDefinition(
-                        title: title,
-                        description: descriptionController.text.trim().isEmpty
-                            ? null
-                            : descriptionController.text.trim(),
-                        recurrence: effectiveRecurrence,
-                        iconKey: selectedIconKey,
-                      );
-
-                      if (mounted) Navigator.pop(ctx);
-                    },
-                    child: const Text('Enregistrer'),
-                  ),
-                ),
-              ],
-            ),
+              );
+            },
           ),
         );
       },
@@ -372,6 +378,7 @@ class _HqManageTasksScreenState extends State<HqManageTasksScreen> {
   Future<void> _showEditTaskDialog(String taskId, Map<String, dynamic> data) async {
     final titleController = TextEditingController(text: data['title'] as String? ?? '');
     final descriptionController = TextEditingController(text: data['description'] as String? ?? '');
+
     final storedRecurrence = (data['recurrence'] as String?) ?? 'hebdo';
     String recurrenceControl = storedRecurrence;
     int intervalDays = 3;
@@ -385,6 +392,7 @@ class _HqManageTasksScreenState extends State<HqManageTasksScreen> {
       recurrenceControl = 'interval';
     }
     String selectedIconKey = (data['iconKey'] as String?) ?? 'other';
+    final intervalController = TextEditingController(text: intervalDays.toString());
 
     await showModalBottomSheet(
       context: context,
@@ -397,149 +405,175 @@ class _HqManageTasksScreenState extends State<HqManageTasksScreen> {
         final viewInsets = MediaQuery.of(ctx).viewInsets.bottom;
         return Padding(
           padding: EdgeInsets.only(bottom: viewInsets),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          child: StatefulBuilder(
+            builder: (ctx, setModalState) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Expanded(
-                      child: Text(
-                        "Détails de la tâche",
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            "Détails de la tâche",
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: titleController,
+                      decoration: const InputDecoration(
+                        labelText: 'Titre',
+                        border: OutlineInputBorder(),
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(ctx),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: descriptionController,
+                      decoration: const InputDecoration(
+                        labelText: 'Description (optionnel)',
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLines: 2,
                     ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: titleController,
-                  decoration: const InputDecoration(
-                    labelText: 'Titre',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Description (optionnel)',
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: recurrenceControl,
-                  items: const [
-                    DropdownMenuItem(value: 'quotidien', child: Text('Quotidien')),
-                    DropdownMenuItem(value: 'hebdo', child: Text('Hebdomadaire')),
-                    DropdownMenuItem(value: 'mensuel', child: Text('Mensuel')),
-                    DropdownMenuItem(value: 'ponctuel', child: Text('Ponctuel')),
-                    DropdownMenuItem(value: 'interval', child: Text('Tous les X jours')),
-                  ],
-                  onChanged: (v) {
-                    if (v != null) {
-                      setState(() => recurrenceControl = v);
-                    }
-                  },
-                  decoration: const InputDecoration(labelText: 'Récurrence', border: OutlineInputBorder()),
-                ),
-                if (recurrenceControl == 'interval') ...[
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      const Text('Tous les'),
-                      const SizedBox(width: 8),
-                      SizedBox(
-                        width: 70,
-                        child: TextField(
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            isDense: true,
-                            contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                            border: OutlineInputBorder(),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: recurrenceControl,
+                      items: const [
+                        DropdownMenuItem(value: 'quotidien', child: Text('Quotidien')),
+                        DropdownMenuItem(value: 'hebdo', child: Text('Hebdomadaire')),
+                        DropdownMenuItem(value: 'mensuel', child: Text('Mensuel')),
+                        DropdownMenuItem(value: 'ponctuel', child: Text('Ponctuel')),
+                        DropdownMenuItem(value: 'interval', child: Text('Tous les X jours')),
+                      ],
+                      onChanged: (v) {
+                        if (v != null) {
+                          setModalState(() => recurrenceControl = v);
+                        }
+                      },
+                      decoration: const InputDecoration(labelText: 'Récurrence', border: OutlineInputBorder()),
+                    ),
+                    if (recurrenceControl == 'interval') ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          const Text('Tous les'),
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 70,
+                            child: TextField(
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                border: OutlineInputBorder(),
+                              ),
+                              controller: intervalController,
+                              onChanged: (value) {
+                                final parsed = int.tryParse(value);
+                                if (parsed != null && parsed > 0) {
+                                  setModalState(() => intervalDays = parsed);
+                                }
+                              },
+                            ),
                           ),
-                          controller: TextEditingController(text: intervalDays.toString()),
-                          onChanged: (value) {
-                            final parsed = int.tryParse(value) ?? intervalDays;
-                            if (parsed > 0) {
-                              setState(() => intervalDays = parsed);
+                          const SizedBox(width: 8),
+                          const Text('jours'),
+                        ],
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    Text("Icône", style: Theme.of(context).textTheme.labelLarge),
+                    const SizedBox(height: 8),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: _iconChoices.entries.map((entry) {
+                          final isSelected = selectedIconKey == entry.key;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: ChoiceChip(
+                              label: Icon(entry.value, size: 20),
+                              selected: isSelected,
+                              onSelected: (_) {
+                                setModalState(() => selectedIconKey = entry.key);
+                              },
+                              selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                              backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        TextButton(
+                          onPressed: () async {
+                            final confirmed = await showDialog<bool>(
+                              context: ctx,
+                              builder: (dialogCtx) {
+                                return AlertDialog(
+                                  title: const Text('Supprimer la tâche ?'),
+                                  content: const Text('Cette action est irréversible.'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.of(dialogCtx).pop(false),
+                                      child: const Text('Annuler'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => Navigator.of(dialogCtx).pop(true),
+                                      child: const Text('Supprimer'),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+
+                            if (confirmed == true) {
+                              await TaskFirestoreService.deleteTaskDefinition(taskId);
+                              if (mounted) Navigator.pop(ctx);
                             }
                           },
+                          style: TextButton.styleFrom(foregroundColor: Colors.red),
+                          child: const Text('Supprimer'),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text('jours'),
-                    ],
-                  ),
-                ],
-                const SizedBox(height: 16),
-                Text("Icône", style: Theme.of(context).textTheme.labelLarge),
-                const SizedBox(height: 8),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: _iconChoices.entries.map((entry) {
-                      final isSelected = selectedIconKey == entry.key;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: ChoiceChip(
-                          label: Icon(entry.value, size: 20),
-                          selected: isSelected,
-                          onSelected: (_) {
-                            setState(() => selectedIconKey = entry.key);
+                        const Spacer(),
+                        ElevatedButton(
+                          onPressed: () async {
+                            final title = titleController.text.trim();
+                            if (title.isEmpty) return;
+
+                            final effectiveRecurrence = recurrenceControl == 'interval'
+                                ? 'interval_${intervalDays.clamp(1, 365)}'
+                                : recurrenceControl;
+
+                            await TaskFirestoreService.updateTaskDefinition(
+                              taskId,
+                              title: title,
+                              description: descriptionController.text.trim(),
+                              recurrence: effectiveRecurrence,
+                              iconKey: selectedIconKey,
+                            );
+
+                            if (mounted) Navigator.pop(ctx);
                           },
-                          selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.15),
-                          backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                          child: const Text('Enregistrer'),
                         ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    TextButton(
-                      onPressed: () async {
-                        await FirestoreService.deleteTaskDefinition(taskId);
-                        if (mounted) Navigator.pop(ctx);
-                      },
-                      style: TextButton.styleFrom(foregroundColor: Colors.red),
-                      child: const Text('Supprimer'),
-                    ),
-                    const Spacer(),
-                    ElevatedButton(
-                      onPressed: () async {
-                        final title = titleController.text.trim();
-                        if (title.isEmpty) return;
-
-                        final effectiveRecurrence = recurrenceControl == 'interval'
-                            ? 'interval_${intervalDays.clamp(1, 365)}'
-                            : recurrenceControl;
-
-                        await FirestoreService.updateTaskDefinition(
-                          taskId,
-                          title: title,
-                          description: descriptionController.text.trim(),
-                          recurrence: effectiveRecurrence,
-                          iconKey: selectedIconKey,
-                        );
-
-                        if (mounted) Navigator.pop(ctx);
-                      },
-                      child: const Text('Enregistrer'),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
         );
       },
